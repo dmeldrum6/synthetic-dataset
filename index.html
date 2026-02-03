@@ -5,6 +5,58 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Q&A Dataset Generator</title>
     <style>
+        :root {
+            /* Light mode colors */
+            --bg-gradient-start: #667eea;
+            --bg-gradient-end: #764ba2;
+            --container-bg: #ffffff;
+            --section-bg: #f8f9fa;
+            --section-border: #e9ecef;
+            --text-primary: #333333;
+            --text-secondary: #555555;
+            --text-muted: #666666;
+            --text-light: #999999;
+            --input-bg: #ffffff;
+            --input-border: #dddddd;
+            --card-bg: #ffffff;
+            --stat-card-shadow: rgba(0, 0, 0, 0.1);
+            --qa-pair-shadow: rgba(0, 0, 0, 0.1);
+            --primary-color: #667eea;
+            --primary-dark: #764ba2;
+            --info-bg: #d1ecf1;
+            --info-border: #bee5eb;
+            --info-text: #0c5460;
+            --error-bg: #f8d7da;
+            --error-border: #f5c6cb;
+            --error-text: #721c24;
+        }
+
+        [data-theme="dark"] {
+            /* Dark mode colors */
+            --bg-gradient-start: #1a1a2e;
+            --bg-gradient-end: #16213e;
+            --container-bg: #0f3460;
+            --section-bg: #1a1a2e;
+            --section-border: #2d2d44;
+            --text-primary: #e8e8e8;
+            --text-secondary: #c8c8c8;
+            --text-muted: #a8a8a8;
+            --text-light: #888888;
+            --input-bg: #1a1a2e;
+            --input-border: #2d2d44;
+            --card-bg: #16213e;
+            --stat-card-shadow: rgba(0, 0, 0, 0.3);
+            --qa-pair-shadow: rgba(0, 0, 0, 0.3);
+            --primary-color: #667eea;
+            --primary-dark: #764ba2;
+            --info-bg: #1e3a4f;
+            --info-border: #2d5570;
+            --info-text: #89cff0;
+            --error-bg: #3d1f1f;
+            --error-border: #5c2e2e;
+            --error-text: #ff6b6b;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -13,26 +65,29 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
             min-height: 100vh;
             padding: 20px;
-            color: #333;
+            color: var(--text-primary);
+            transition: background 0.3s ease, color 0.3s ease;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            background: white;
+            background: var(--container-bg);
             border-radius: 10px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
             overflow: hidden;
+            transition: background 0.3s ease;
         }
 
         header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
             color: white;
             padding: 30px;
             text-align: center;
+            position: relative;
         }
 
         header h1 {
@@ -45,6 +100,33 @@
             opacity: 0.9;
         }
 
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .theme-toggle:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .theme-icon {
+            font-size: 1.2em;
+        }
+
         .content {
             padding: 30px;
         }
@@ -52,16 +134,17 @@
         .section {
             margin-bottom: 30px;
             padding: 20px;
-            background: #f8f9fa;
+            background: var(--section-bg);
             border-radius: 8px;
-            border: 1px solid #e9ecef;
+            border: 1px solid var(--section-border);
+            transition: background 0.3s ease, border-color 0.3s ease;
         }
 
         .section-title {
             font-size: 1.5em;
             margin-bottom: 15px;
-            color: #667eea;
-            border-bottom: 2px solid #667eea;
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
             padding-bottom: 10px;
         }
 
@@ -73,7 +156,8 @@
             display: block;
             margin-bottom: 5px;
             font-weight: 600;
-            color: #555;
+            color: var(--text-secondary);
+            transition: color 0.3s ease;
         }
 
         input[type="text"],
@@ -82,10 +166,12 @@
         textarea {
             width: 100%;
             padding: 12px;
-            border: 2px solid #ddd;
+            border: 2px solid var(--input-border);
             border-radius: 6px;
             font-size: 1em;
-            transition: border-color 0.3s;
+            transition: border-color 0.3s, background 0.3s, color 0.3s;
+            background: var(--input-bg);
+            color: var(--text-primary);
         }
 
         input[type="text"]:focus,
@@ -93,7 +179,7 @@
         input[type="password"]:focus,
         textarea:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: var(--primary-color);
         }
 
         textarea {
@@ -120,7 +206,7 @@
         }
 
         button.primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
             color: white;
         }
 
@@ -170,15 +256,16 @@
         .progress-bar {
             width: 100%;
             height: 30px;
-            background: #e9ecef;
+            background: var(--section-border);
             border-radius: 15px;
             overflow: hidden;
             position: relative;
+            transition: background 0.3s ease;
         }
 
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-dark) 100%);
             transition: width 0.3s;
             display: flex;
             align-items: center;
@@ -190,8 +277,9 @@
         .progress-text {
             margin-top: 10px;
             text-align: center;
-            color: #555;
+            color: var(--text-secondary);
             font-weight: 600;
+            transition: color 0.3s ease;
         }
 
         .qa-pairs {
@@ -199,12 +287,13 @@
         }
 
         .qa-pair {
-            background: white;
+            background: var(--card-bg);
             padding: 15px;
             margin-bottom: 15px;
             border-radius: 6px;
-            border-left: 4px solid #667eea;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid var(--primary-color);
+            box-shadow: 0 2px 5px var(--qa-pair-shadow);
+            transition: background 0.3s ease, box-shadow 0.3s ease;
         }
 
         .qa-pair-header {
@@ -216,7 +305,7 @@
 
         .qa-pair-number {
             font-weight: 600;
-            color: #667eea;
+            color: var(--primary-color);
         }
 
         .qa-pair-actions {
@@ -235,11 +324,11 @@
         }
 
         .question strong {
-            color: #667eea;
+            color: var(--primary-color);
         }
 
         .answer strong {
-            color: #764ba2;
+            color: var(--primary-dark);
         }
 
         .stats {
@@ -250,41 +339,45 @@
         }
 
         .stat-card {
-            background: white;
+            background: var(--card-bg);
             padding: 20px;
             border-radius: 8px;
             text-align: center;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 5px var(--stat-card-shadow);
+            transition: background 0.3s ease, box-shadow 0.3s ease;
         }
 
         .stat-value {
             font-size: 2.5em;
             font-weight: bold;
-            color: #667eea;
+            color: var(--primary-color);
         }
 
         .stat-label {
-            color: #666;
+            color: var(--text-muted);
             margin-top: 5px;
+            transition: color 0.3s ease;
         }
 
         .info-box {
-            background: #d1ecf1;
-            border: 1px solid #bee5eb;
-            color: #0c5460;
+            background: var(--info-bg);
+            border: 1px solid var(--info-border);
+            color: var(--info-text);
             padding: 15px;
             border-radius: 6px;
             margin-bottom: 20px;
+            transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
         }
 
         .error-box {
-            background: #f8d7da;
-            border: 1px solid #f5c6cb;
-            color: #721c24;
+            background: var(--error-bg);
+            border: 1px solid var(--error-border);
+            color: var(--error-text);
             padding: 15px;
             border-radius: 6px;
             margin-bottom: 20px;
             display: none;
+            transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
         }
 
         .hidden {
@@ -293,24 +386,32 @@
 
         input[type="file"] {
             padding: 10px;
-            border: 2px dashed #667eea;
+            border: 2px dashed var(--primary-color);
             border-radius: 6px;
             width: 100%;
             cursor: pointer;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            transition: background 0.3s ease, color 0.3s ease;
         }
 
         .dataset-info {
-            background: white;
+            background: var(--card-bg);
             padding: 15px;
             border-radius: 6px;
             margin-top: 15px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--input-border);
+            transition: background 0.3s ease, border-color 0.3s ease;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
+            <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+                <span class="theme-icon" id="themeIcon">🌙</span>
+                <span id="themeText">Dark</span>
+            </button>
             <h1>Q&A Dataset Generator</h1>
             <p>Generate high-quality question and answer pairs for LLM training</p>
         </header>
@@ -409,6 +510,37 @@
     </div>
 
     <script>
+        // Theme Management
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateThemeButton(savedTheme);
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeButton(newTheme);
+        }
+
+        function updateThemeButton(theme) {
+            const themeIcon = document.getElementById('themeIcon');
+            const themeText = document.getElementById('themeText');
+            if (theme === 'dark') {
+                themeIcon.textContent = '☀️';
+                themeText.textContent = 'Light';
+            } else {
+                themeIcon.textContent = '🌙';
+                themeText.textContent = 'Dark';
+            }
+        }
+
+        // Initialize theme on page load
+        initTheme();
+
+        // Dataset Management
         let dataset = [];
         let isGenerating = false;
         let shouldStop = false;
