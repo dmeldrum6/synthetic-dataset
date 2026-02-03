@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Q&A Dataset Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            color: #667eea;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="password"],
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        input[type="password"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 1em;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        button.primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        button.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button.secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        button.secondary:hover {
+            background: #5a6268;
+        }
+
+        button.success {
+            background: #28a745;
+            color: white;
+        }
+
+        button.success:hover {
+            background: #218838;
+        }
+
+        button.danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        button.danger:hover {
+            background: #c82333;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .progress-container {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e9ecef;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .progress-text {
+            margin-top: 10px;
+            text-align: center;
+            color: #555;
+            font-weight: 600;
+        }
+
+        .qa-pairs {
+            margin-top: 20px;
+        }
+
+        .qa-pair {
+            background: white;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .qa-pair-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .qa-pair-number {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .qa-pair-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .qa-pair-actions button {
+            padding: 5px 10px;
+            font-size: 0.85em;
+            min-width: auto;
+        }
+
+        .question {
+            margin-bottom: 10px;
+        }
+
+        .question strong {
+            color: #667eea;
+        }
+
+        .answer strong {
+            color: #764ba2;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .info-box {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .error-box {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        input[type="file"] {
+            padding: 10px;
+            border: 2px dashed #667eea;
+            border-radius: 6px;
+            width: 100%;
+            cursor: pointer;
+        }
+
+        .dataset-info {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Q&A Dataset Generator</h1>
+            <p>Generate high-quality question and answer pairs for LLM training</p>
+        </header>
+
+        <div class="content">
+            <div class="error-box" id="errorBox"></div>
+
+            <div class="section">
+                <h2 class="section-title">API Configuration</h2>
+                <div class="form-group">
+                    <label for="apiEndpoint">API Endpoint:</label>
+                    <input type="text" id="apiEndpoint" placeholder="https://api.openai.com/v1/chat/completions" value="https://api.openai.com/v1/chat/completions">
+                </div>
+                <div class="form-group">
+                    <label for="apiKey">API Key:</label>
+                    <input type="password" id="apiKey" placeholder="sk-...">
+                </div>
+                <div class="form-group">
+                    <label for="modelName">Model Name:</label>
+                    <input type="text" id="modelName" placeholder="gpt-3.5-turbo" value="gpt-3.5-turbo">
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Dataset Configuration</h2>
+                <div class="form-group">
+                    <label for="topic">Topic:</label>
+                    <textarea id="topic" placeholder="e.g., Python programming, Machine Learning basics, World History, etc."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="numPairs">Number of Q&A Pairs:</label>
+                    <input type="number" id="numPairs" min="1" value="100">
+                    <div class="info-box">
+                        Recommended minimum: 100 pairs for a useful training dataset
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="batchSize">Batch Size (pairs generated per request):</label>
+                    <input type="number" id="batchSize" min="1" max="20" value="5">
+                </div>
+                <div class="button-group">
+                    <button class="primary" id="generateBtn" onclick="startGeneration()">Generate Dataset</button>
+                    <button class="danger" id="stopBtn" onclick="stopGeneration()" style="display: none;">Stop Generation</button>
+                </div>
+                <div class="progress-container" id="progressContainer">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill">0%</div>
+                    </div>
+                    <div class="progress-text" id="progressText">Generating...</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Current Dataset</h2>
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-value" id="pairCount">0</div>
+                        <div class="stat-label">Q&A Pairs</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="avgQLength">0</div>
+                        <div class="stat-label">Avg Question Length</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="avgALength">0</div>
+                        <div class="stat-label">Avg Answer Length</div>
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button class="success" onclick="exportDataset()">Export Dataset</button>
+                    <button class="secondary" onclick="clearDataset()">Clear Dataset</button>
+                    <button class="secondary" onclick="document.getElementById('importFile').click()">Import Dataset</button>
+                </div>
+                <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importDataset(event)">
+                <div id="datasetInfo" class="dataset-info hidden"></div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Combine Datasets</h2>
+                <div class="info-box">
+                    Upload multiple JSON dataset files to combine them into a single dataset
+                </div>
+                <div class="form-group">
+                    <label for="combineFiles">Select Multiple Dataset Files:</label>
+                    <input type="file" id="combineFiles" accept=".json" multiple onchange="combineDatasets(event)">
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Generated Q&A Pairs</h2>
+                <div class="qa-pairs" id="qaPairs">
+                    <p style="text-align: center; color: #999;">No pairs generated yet. Configure the settings above and click "Generate Dataset".</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let dataset = [];
+        let isGenerating = false;
+        let shouldStop = false;
+
+        function showError(message) {
+            const errorBox = document.getElementById('errorBox');
+            errorBox.textContent = message;
+            errorBox.style.display = 'block';
+            setTimeout(() => {
+                errorBox.style.display = 'none';
+            }, 5000);
+        }
+
+        function updateStats() {
+            document.getElementById('pairCount').textContent = dataset.length;
+
+            if (dataset.length > 0) {
+                const avgQ = Math.round(dataset.reduce((sum, pair) => sum + pair.question.length, 0) / dataset.length);
+                const avgA = Math.round(dataset.reduce((sum, pair) => sum + pair.answer.length, 0) / dataset.length);
+                document.getElementById('avgQLength').textContent = avgQ;
+                document.getElementById('avgALength').textContent = avgA;
+            } else {
+                document.getElementById('avgQLength').textContent = '0';
+                document.getElementById('avgALength').textContent = '0';
+            }
+        }
+
+        function renderQAPairs() {
+            const container = document.getElementById('qaPairs');
+
+            if (dataset.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #999;">No pairs generated yet. Configure the settings above and click "Generate Dataset".</p>';
+                return;
+            }
+
+            container.innerHTML = dataset.map((pair, index) => `
+                <div class="qa-pair" id="pair-${index}">
+                    <div class="qa-pair-header">
+                        <span class="qa-pair-number">Pair #${index + 1}</span>
+                        <div class="qa-pair-actions">
+                            <button class="secondary" onclick="editPair(${index})">Edit</button>
+                            <button class="danger" onclick="deletePair(${index})">Delete</button>
+                        </div>
+                    </div>
+                    <div class="question">
+                        <strong>Q:</strong> ${escapeHtml(pair.question)}
+                    </div>
+                    <div class="answer">
+                        <strong>A:</strong> ${escapeHtml(pair.answer)}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function deletePair(index) {
+            if (confirm('Are you sure you want to delete this Q&A pair?')) {
+                dataset.splice(index, 1);
+                updateStats();
+                renderQAPairs();
+            }
+        }
+
+        function editPair(index) {
+            const pair = dataset[index];
+            const newQuestion = prompt('Edit Question:', pair.question);
+            if (newQuestion !== null && newQuestion.trim() !== '') {
+                const newAnswer = prompt('Edit Answer:', pair.answer);
+                if (newAnswer !== null && newAnswer.trim() !== '') {
+                    dataset[index] = { question: newQuestion.trim(), answer: newAnswer.trim() };
+                    updateStats();
+                    renderQAPairs();
+                }
+            }
+        }
+
+        async function callLLM(prompt) {
+            const apiEndpoint = document.getElementById('apiEndpoint').value;
+            const apiKey = document.getElementById('apiKey').value;
+            const modelName = document.getElementById('modelName').value;
+
+            const response = await fetch(apiEndpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    model: modelName,
+                    messages: [
+                        {
+                            role: 'system',
+                            content: 'You are a helpful assistant that generates high-quality question and answer pairs for training language models. Generate diverse, educational, and well-structured Q&A pairs.'
+                        },
+                        {
+                            role: 'user',
+                            content: prompt
+                        }
+                    ],
+                    temperature: 0.8
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.text();
+                throw new Error(`API Error: ${response.status} - ${error}`);
+            }
+
+            const data = await response.json();
+            return data.choices[0].message.content;
+        }
+
+        async function generateBatch(topic, batchSize, batchNumber) {
+            const prompt = `Generate exactly ${batchSize} question and answer pairs about "${topic}".
+
+Make the questions diverse, covering different aspects and difficulty levels. Each answer should be comprehensive and informative.
+
+Format your response as a JSON array like this:
+[
+    {"question": "Question text here?", "answer": "Answer text here."},
+    {"question": "Another question?", "answer": "Another answer."}
+]
+
+Generate exactly ${batchSize} pairs. Make them unique and avoid repetition with previous batches (this is batch ${batchNumber}).`;
+
+            const response = await callLLM(prompt);
+
+            try {
+                const jsonMatch = response.match(/\[[\s\S]*\]/);
+                if (!jsonMatch) {
+                    throw new Error('No JSON array found in response');
+                }
+
+                const pairs = JSON.parse(jsonMatch[0]);
+
+                if (!Array.isArray(pairs)) {
+                    throw new Error('Response is not an array');
+                }
+
+                const validPairs = pairs.filter(pair =>
+                    pair.question && pair.answer &&
+                    typeof pair.question === 'string' &&
+                    typeof pair.answer === 'string'
+                );
+
+                return validPairs;
+            } catch (e) {
+                console.error('Failed to parse LLM response:', response);
+                throw new Error('Failed to parse Q&A pairs from LLM response: ' + e.message);
+            }
+        }
+
+        async function startGeneration() {
+            const topic = document.getElementById('topic').value.trim();
+            const numPairs = parseInt(document.getElementById('numPairs').value);
+            const batchSize = parseInt(document.getElementById('batchSize').value);
+            const apiKey = document.getElementById('apiKey').value.trim();
+
+            if (!topic) {
+                showError('Please enter a topic');
+                return;
+            }
+
+            if (!apiKey) {
+                showError('Please enter an API key');
+                return;
+            }
+
+            if (numPairs < 1) {
+                showError('Number of pairs must be at least 1');
+                return;
+            }
+
+            if (batchSize < 1 || batchSize > 20) {
+                showError('Batch size must be between 1 and 20');
+                return;
+            }
+
+            isGenerating = true;
+            shouldStop = false;
+            document.getElementById('generateBtn').style.display = 'none';
+            document.getElementById('stopBtn').style.display = 'block';
+            document.getElementById('progressContainer').style.display = 'block';
+
+            const startIndex = dataset.length;
+            let generatedCount = 0;
+            let batchNumber = 1;
+
+            try {
+                while (generatedCount < numPairs && !shouldStop) {
+                    const remainingPairs = numPairs - generatedCount;
+                    const currentBatchSize = Math.min(batchSize, remainingPairs);
+
+                    document.getElementById('progressText').textContent =
+                        `Generating batch ${batchNumber} (${generatedCount}/${numPairs} pairs completed)...`;
+
+                    const pairs = await generateBatch(topic, currentBatchSize, batchNumber);
+
+                    dataset.push(...pairs);
+                    generatedCount += pairs.length;
+
+                    const progress = Math.round((generatedCount / numPairs) * 100);
+                    document.getElementById('progressFill').style.width = progress + '%';
+                    document.getElementById('progressFill').textContent = progress + '%';
+
+                    updateStats();
+                    renderQAPairs();
+
+                    batchNumber++;
+
+                    if (generatedCount < numPairs && !shouldStop) {
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                }
+
+                if (shouldStop) {
+                    document.getElementById('progressText').textContent =
+                        `Generation stopped. ${generatedCount} pairs generated.`;
+                } else {
+                    document.getElementById('progressText').textContent =
+                        `Complete! ${generatedCount} pairs generated successfully.`;
+                }
+
+            } catch (error) {
+                showError('Generation failed: ' + error.message);
+                console.error(error);
+            } finally {
+                isGenerating = false;
+                document.getElementById('generateBtn').style.display = 'block';
+                document.getElementById('stopBtn').style.display = 'none';
+            }
+        }
+
+        function stopGeneration() {
+            shouldStop = true;
+            document.getElementById('progressText').textContent = 'Stopping generation...';
+        }
+
+        function exportDataset() {
+            if (dataset.length === 0) {
+                showError('No data to export');
+                return;
+            }
+
+            const dataStr = JSON.stringify(dataset, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            a.download = `qa-dataset-${timestamp}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function clearDataset() {
+            if (dataset.length === 0) {
+                return;
+            }
+
+            if (confirm('Are you sure you want to clear all Q&A pairs? This cannot be undone.')) {
+                dataset = [];
+                updateStats();
+                renderQAPairs();
+                document.getElementById('progressContainer').style.display = 'none';
+            }
+        }
+
+        function importDataset(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const imported = JSON.parse(e.target.result);
+
+                    if (!Array.isArray(imported)) {
+                        showError('Invalid dataset format: must be a JSON array');
+                        return;
+                    }
+
+                    const validPairs = imported.filter(pair =>
+                        pair.question && pair.answer &&
+                        typeof pair.question === 'string' &&
+                        typeof pair.answer === 'string'
+                    );
+
+                    if (validPairs.length === 0) {
+                        showError('No valid Q&A pairs found in the file');
+                        return;
+                    }
+
+                    if (dataset.length > 0) {
+                        if (confirm(`You have ${dataset.length} existing pairs. Do you want to append ${validPairs.length} imported pairs?`)) {
+                            dataset.push(...validPairs);
+                        } else {
+                            dataset = validPairs;
+                        }
+                    } else {
+                        dataset = validPairs;
+                    }
+
+                    updateStats();
+                    renderQAPairs();
+
+                    const info = document.getElementById('datasetInfo');
+                    info.innerHTML = `<strong>Imported:</strong> ${validPairs.length} Q&A pairs from ${file.name}`;
+                    info.classList.remove('hidden');
+                    setTimeout(() => info.classList.add('hidden'), 5000);
+
+                } catch (error) {
+                    showError('Failed to import dataset: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function combineDatasets(event) {
+            const files = Array.from(event.target.files);
+            if (files.length === 0) return;
+
+            let combined = [];
+            let filesProcessed = 0;
+
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const imported = JSON.parse(e.target.result);
+
+                        if (Array.isArray(imported)) {
+                            const validPairs = imported.filter(pair =>
+                                pair.question && pair.answer &&
+                                typeof pair.question === 'string' &&
+                                typeof pair.answer === 'string'
+                            );
+                            combined.push(...validPairs);
+                        }
+
+                    } catch (error) {
+                        console.error(`Failed to parse ${file.name}:`, error);
+                    }
+
+                    filesProcessed++;
+
+                    if (filesProcessed === files.length) {
+                        if (combined.length === 0) {
+                            showError('No valid Q&A pairs found in the selected files');
+                            return;
+                        }
+
+                        const dataStr = JSON.stringify(combined, null, 2);
+                        const blob = new Blob([dataStr], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+                        a.download = `combined-dataset-${timestamp}.json`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+
+                        alert(`Successfully combined ${files.length} files into a dataset with ${combined.length} Q&A pairs!`);
+                    }
+                };
+                reader.readAsText(file);
+            });
+
+            event.target.value = '';
+        }
+
+        updateStats();
+    </script>
+</body>
+</html>
