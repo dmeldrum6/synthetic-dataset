@@ -506,14 +506,15 @@
                     messages: [
                         {
                             role: 'system',
-                            content: 'You are a helpful assistant that generates high-quality question and answer pairs for training language models. Generate diverse, educational, and well-structured Q&A pairs.'
+                            content: 'You are a helpful assistant that generates high-quality question and answer pairs for training language models. Generate diverse, educational, and well-structured Q&A pairs. Always return valid, complete JSON.'
                         },
                         {
                             role: 'user',
                             content: prompt
                         }
                     ],
-                    temperature: 0.8
+                    temperature: 0.8,
+                    max_tokens: 4000
                 })
             });
 
@@ -526,10 +527,61 @@
             return data.choices[0].message.content;
         }
 
+        function sanitizeText(text) {
+            // Replace problematic Unicode characters with standard ASCII equivalents
+            return text
+                .replace(/[\u2010-\u2015]/g, '-')  // Replace various dashes with standard hyphen
+                .replace(/[\u2018\u2019]/g, "'")   // Replace smart single quotes
+                .replace(/[\u201C\u201D]/g, '"')   // Replace smart double quotes
+                .replace(/\u2026/g, '...')         // Replace ellipsis
+                .replace(/[\u2000-\u200B]/g, ' '); // Replace various spaces with standard space
+        }
+
+        function isCompleteJSON(text) {
+            // Check if JSON is properly closed
+            let bracketCount = 0;
+            let braceCount = 0;
+            let inString = false;
+            let escaped = false;
+
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+
+                if (escaped) {
+                    escaped = false;
+                    continue;
+                }
+
+                if (char === '\\') {
+                    escaped = true;
+                    continue;
+                }
+
+                if (char === '"' && !escaped) {
+                    inString = !inString;
+                    continue;
+                }
+
+                if (!inString) {
+                    if (char === '[') bracketCount++;
+                    if (char === ']') bracketCount--;
+                    if (char === '{') braceCount++;
+                    if (char === '}') braceCount--;
+                }
+            }
+
+            return bracketCount === 0 && braceCount === 0 && !inString;
+        }
+
         async function generateBatch(topic, batchSize, batchNumber) {
             const prompt = `Generate exactly ${batchSize} question and answer pairs about "${topic}".
 
 Make the questions diverse, covering different aspects and difficulty levels. Each answer should be comprehensive and informative.
+
+IMPORTANT:
+- Use only standard ASCII characters for punctuation (regular hyphens, quotes, etc.)
+- Keep answers concise enough to fit within token limits
+- Format your response as ONLY a JSON array with no additional text before or after
 
 Format your response as a JSON array like this:
 [
@@ -542,12 +594,23 @@ Generate exactly ${batchSize} pairs. Make them unique and avoid repetition with 
             const response = await callLLM(prompt);
 
             try {
-                const jsonMatch = response.match(/\[[\s\S]*\]/);
+                // Sanitize the response to replace special Unicode characters
+                const sanitized = sanitizeText(response);
+
+                // Extract JSON array from response
+                const jsonMatch = sanitized.match(/\[[\s\S]*\]/);
                 if (!jsonMatch) {
                     throw new Error('No JSON array found in response');
                 }
 
-                const pairs = JSON.parse(jsonMatch[0]);
+                const jsonString = jsonMatch[0];
+
+                // Check if JSON is complete before parsing
+                if (!isCompleteJSON(jsonString)) {
+                    throw new Error('Incomplete JSON detected - response may have been truncated. Try reducing batch size or simplifying the topic.');
+                }
+
+                const pairs = JSON.parse(jsonString);
 
                 if (!Array.isArray(pairs)) {
                     throw new Error('Response is not an array');
@@ -556,8 +619,14 @@ Generate exactly ${batchSize} pairs. Make them unique and avoid repetition with 
                 const validPairs = pairs.filter(pair =>
                     pair.question && pair.answer &&
                     typeof pair.question === 'string' &&
-                    typeof pair.answer === 'string'
+                    typeof pair.answer === 'string' &&
+                    pair.question.trim().length > 0 &&
+                    pair.answer.trim().length > 0
                 );
+
+                if (validPairs.length === 0) {
+                    throw new Error('No valid Q&A pairs found in response');
+                }
 
                 return validPairs;
             } catch (e) {
