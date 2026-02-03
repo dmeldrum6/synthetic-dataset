@@ -2,6 +2,8 @@
 
 A web-based tool for generating high-quality question and answer datasets to train Large Language Models (LLMs). This application uses any OpenAI API-compatible LLM to generate diverse Q&A pairs on any topic.
 
+<img width="810" height="912" alt="image" src="https://github.com/user-attachments/assets/6c356d86-d733-439e-afd3-19d9a2870f21" />
+
 ## Features
 
 - **OpenAI API Compatible**: Works with any API that follows the OpenAI chat completion format
