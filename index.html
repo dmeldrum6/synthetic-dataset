@@ -403,6 +403,38 @@
             border: 1px solid var(--input-border);
             transition: background 0.3s ease, border-color 0.3s ease;
         }
+
+        .checkpoint-banner {
+            background: var(--info-bg);
+            border: 1px solid var(--info-border);
+            color: var(--info-text);
+            padding: 15px 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+            transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+        }
+
+        .checkpoint-banner.hidden {
+            display: none;
+        }
+
+        .checkpoint-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .checkpoint-actions button {
+            padding: 8px 14px;
+            min-width: auto;
+            flex: none;
+            font-size: 0.9em;
+        }
     </style>
 </head>
 <body>
@@ -417,6 +449,13 @@
         </header>
 
         <div class="content">
+            <div id="checkpointBanner" class="checkpoint-banner hidden">
+                <span>Checkpoint found: <strong id="checkpointCount">0</strong> pairs saved from a previous session.</span>
+                <div class="checkpoint-actions">
+                    <button class="primary" onclick="restoreCheckpoint()">Restore <span id="checkpointCountBtn">0</span> pairs</button>
+                    <button class="secondary" onclick="dismissCheckpoint()">Start fresh</button>
+                </div>
+            </div>
             <div class="error-box" id="errorBox"></div>
 
             <div class="section">
@@ -483,6 +522,10 @@
                         <div class="stat-value" id="avgALength">0</div>
                         <div class="stat-label">Avg Answer Length</div>
                     </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="duplicatesSkipped">0</div>
+                        <div class="stat-label">Duplicates Skipped</div>
+                    </div>
                 </div>
                 <div class="button-group">
                     <button class="success" onclick="exportDataset()">Export Dataset</button>
@@ -548,6 +591,65 @@
         let dataset = [];
         let isGenerating = false;
         let shouldStop = false;
+        let seenFingerprints = new Set();
+        let duplicatesSkipped = 0;
+
+        const CHECKPOINT_KEY = 'qa_dataset_checkpoint';
+
+        function fingerprint(question) {
+            return question.toLowerCase()
+                .replace(/[^\w\s]/g, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function rebuildFingerprints() {
+            seenFingerprints = new Set(dataset.map(p => fingerprint(p.question)));
+        }
+
+        function saveCheckpoint() {
+            try {
+                localStorage.setItem(CHECKPOINT_KEY, JSON.stringify(dataset));
+            } catch (e) {
+                if (e.name === 'QuotaExceededError' || e.code === 22) {
+                    showError('Dataset too large to auto-save \u2014 export a checkpoint manually');
+                }
+            }
+        }
+
+        function checkForCheckpoint() {
+            const saved = localStorage.getItem(CHECKPOINT_KEY);
+            if (!saved) return;
+            try {
+                const parsed = JSON.parse(saved);
+                if (!Array.isArray(parsed) || parsed.length === 0) return;
+                const count = parsed.length;
+                document.getElementById('checkpointCount').textContent = count;
+                document.getElementById('checkpointCountBtn').textContent = count;
+                document.getElementById('checkpointBanner').classList.remove('hidden');
+                window._checkpointData = parsed;
+            } catch (e) {
+                localStorage.removeItem(CHECKPOINT_KEY);
+            }
+        }
+
+        function restoreCheckpoint() {
+            const data = window._checkpointData;
+            if (!data) return;
+            dataset = data;
+            rebuildFingerprints();
+            duplicatesSkipped = 0;
+            updateStats();
+            renderQAPairs();
+            document.getElementById('checkpointBanner').classList.add('hidden');
+            window._checkpointData = null;
+        }
+
+        function dismissCheckpoint() {
+            localStorage.removeItem(CHECKPOINT_KEY);
+            document.getElementById('checkpointBanner').classList.add('hidden');
+            window._checkpointData = null;
+        }
 
         function showError(message) {
             const errorBox = document.getElementById('errorBox');
@@ -560,6 +662,7 @@
 
         function updateStats() {
             document.getElementById('pairCount').textContent = dataset.length;
+            document.getElementById('duplicatesSkipped').textContent = duplicatesSkipped;
 
             if (dataset.length > 0) {
                 const avgQ = Math.round(dataset.reduce((sum, pair) => sum + pair.question.length, 0) / dataset.length);
@@ -856,12 +959,25 @@ Generate exactly ${batchSize} pairs. Make them unique and avoid repetition with 
                         );
 
                         if (!shouldStop) {
-                            const insertIndex = dataset.length;
-                            dataset.push(...pairs);
-                            completedPairs += pairs.length;
-                            appendQAPairs(pairs, insertIndex);
+                            const newPairs = [];
+                            for (const pair of pairs) {
+                                const fp = fingerprint(pair.question);
+                                if (!seenFingerprints.has(fp)) {
+                                    seenFingerprints.add(fp);
+                                    newPairs.push(pair);
+                                } else {
+                                    duplicatesSkipped++;
+                                }
+                            }
+                            if (newPairs.length > 0) {
+                                const insertIndex = dataset.length;
+                                dataset.push(...newPairs);
+                                completedPairs += newPairs.length;
+                                appendQAPairs(newPairs, insertIndex);
+                            }
                             updateProgress();
                             updateStats();
+                            saveCheckpoint();
                         }
                     } catch (err) {
                         if (!shouldStop) {
@@ -919,6 +1035,9 @@ Generate exactly ${batchSize} pairs. Make them unique and avoid repetition with 
 
             if (confirm('Are you sure you want to clear all Q&A pairs? This cannot be undone.')) {
                 dataset = [];
+                seenFingerprints = new Set();
+                duplicatesSkipped = 0;
+                localStorage.removeItem(CHECKPOINT_KEY);
                 updateStats();
                 renderQAPairs();
                 document.getElementById('progressContainer').style.display = 'none';
@@ -955,11 +1074,14 @@ Generate exactly ${batchSize} pairs. Make them unique and avoid repetition with 
                             dataset.push(...validPairs);
                         } else {
                             dataset = validPairs;
+                            duplicatesSkipped = 0;
                         }
                     } else {
                         dataset = validPairs;
+                        duplicatesSkipped = 0;
                     }
 
+                    rebuildFingerprints();
                     updateStats();
                     renderQAPairs();
 
@@ -1030,6 +1152,7 @@ Generate exactly ${batchSize} pairs. Make them unique and avoid repetition with 
         }
 
         updateStats();
+        checkForCheckpoint();
     </script>
 </body>
 </html>
