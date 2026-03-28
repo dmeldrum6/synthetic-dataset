@@ -248,6 +248,69 @@
             transform: none !important;
         }
 
+        .export-wrapper {
+            position: relative;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .export-split {
+            display: flex;
+            width: 100%;
+        }
+
+        .export-split .export-main {
+            border-radius: 6px 0 0 6px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .export-split .export-caret {
+            border-radius: 0 6px 6px 0;
+            border-left: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 12px 14px;
+            flex: 0 0 auto;
+            min-width: 0;
+        }
+
+        .export-menu {
+            display: none;
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            background: var(--card-bg);
+            border: 1px solid var(--section-border);
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+            min-width: 180px;
+            overflow: hidden;
+        }
+
+        .export-menu.open {
+            display: block;
+        }
+
+        .export-menu button {
+            display: block;
+            width: 100%;
+            text-align: left;
+            background: none;
+            color: var(--text-primary);
+            padding: 10px 16px;
+            border: none;
+            border-radius: 0;
+            font-size: 0.95em;
+            font-weight: 500;
+            flex: none;
+            min-width: 0;
+        }
+
+        .export-menu button:hover {
+            background: var(--section-bg);
+            transform: none;
+        }
+
         .progress-container {
             margin-top: 20px;
             display: none;
@@ -489,7 +552,10 @@
                 </div>
                 <div class="form-group">
                     <label for="batchSize">Batch Size (pairs generated per request):</label>
-                    <input type="number" id="batchSize" min="1" max="20" value="5">
+                    <input type="number" id="batchSize" min="1" value="5">
+                    <div class="info-box" style="margin-top: 8px;">
+                        Larger batches are faster but may occasionally be truncated by the model.
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="concurrency">Parallel Batches (1–10):</label>
@@ -528,7 +594,18 @@
                     </div>
                 </div>
                 <div class="button-group">
-                    <button class="success" onclick="exportDataset()">Export Dataset</button>
+                    <div class="export-wrapper">
+                        <div class="export-split">
+                            <button class="success export-main" onclick="exportDataset('json')">Export JSON</button>
+                            <button class="success export-caret" onclick="toggleExportMenu(event)" aria-label="More export formats" title="More export formats">&#9660;</button>
+                        </div>
+                        <div class="export-menu" id="exportMenu">
+                            <button onclick="exportDataset('json')">JSON (.json)</button>
+                            <button onclick="exportDataset('jsonl')">JSONL (.jsonl)</button>
+                            <button onclick="exportDataset('alpaca')">Alpaca (.json)</button>
+                            <button onclick="exportDataset('csv')">CSV (.csv)</button>
+                        </div>
+                    </div>
                     <button class="secondary" onclick="clearDataset()">Clear Dataset</button>
                     <button class="secondary" onclick="document.getElementById('importFile').click()">Import Dataset</button>
                 </div>
@@ -921,7 +998,7 @@ Generate exactly ${batchSize} pairs. Make them unique and avoid repetition with 
             if (!topic) { showError('Please enter a topic'); return; }
             if (!apiKey) { showError('Please enter an API key'); return; }
             if (numPairs < 1) { showError('Number of pairs must be at least 1'); return; }
-            if (batchSize < 1 || batchSize > 20) { showError('Batch size must be between 1 and 20'); return; }
+            if (batchSize < 1 || batchSize > 50) { showError('Batch size must be between 1 and 50'); return; }
 
             isGenerating = true;
             shouldStop = false;
@@ -1011,19 +1088,54 @@ Generate exactly ${batchSize} pairs. Make them unique and avoid repetition with 
             document.getElementById('progressText').textContent = 'Stopping generation...';
         }
 
-        function exportDataset() {
+        function toggleExportMenu(event) {
+            event.stopPropagation();
+            document.getElementById('exportMenu').classList.toggle('open');
+        }
+
+        document.addEventListener('click', () => {
+            document.getElementById('exportMenu')?.classList.remove('open');
+        });
+
+        function exportDataset(format) {
+            document.getElementById('exportMenu').classList.remove('open');
+
             if (dataset.length === 0) {
                 showError('No data to export');
                 return;
             }
 
-            const dataStr = JSON.stringify(dataset, null, 2);
-            const blob = new Blob([dataStr], { type: 'application/json' });
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            let content, mimeType, filename;
+
+            if (format === 'json') {
+                content = JSON.stringify(dataset, null, 2);
+                mimeType = 'application/json';
+                filename = `qa-dataset-${timestamp}.json`;
+            } else if (format === 'jsonl') {
+                content = dataset.map(p => JSON.stringify({ question: p.question, answer: p.answer })).join('\n');
+                mimeType = 'application/x-ndjson';
+                filename = `qa-dataset-${timestamp}.jsonl`;
+            } else if (format === 'alpaca') {
+                const alpaca = dataset.map(p => ({ instruction: p.question, input: '', output: p.answer }));
+                content = JSON.stringify(alpaca, null, 2);
+                mimeType = 'application/json';
+                filename = `qa-dataset-alpaca-${timestamp}.json`;
+            } else if (format === 'csv') {
+                const escape = v => '"' + v.replace(/"/g, '""') + '"';
+                content = 'question,answer\n' + dataset.map(p => `${escape(p.question)},${escape(p.answer)}`).join('\n');
+                mimeType = 'text/csv';
+                filename = `qa-dataset-${timestamp}.csv`;
+            } else {
+                showError('Unknown export format');
+                return;
+            }
+
+            const blob = new Blob([content], { type: mimeType });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-            a.download = `qa-dataset-${timestamp}.json`;
+            a.download = filename;
             a.click();
             URL.revokeObjectURL(url);
         }
